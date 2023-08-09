@@ -1,0 +1,93 @@
+[
+  {
+    "FLOW": "PPL",
+    "PARENT_LOT": "04UYVX",
+    "DEVICE": "AM10725CW",
+    "PRODUCTID": "UM909311N00",
+    "StepID": 6910,
+    "MachineID": "B5_BPHI_01",
+    "StepIn_Date": "2/2/2019 0:03",
+    "StepOut_Date": "2/2/2019 0:05",
+    "Quantity": 25,
+    "TT_CUST_SOD": "2/2/2019",
+    "PlanID": "20210708_1"
+  },
+  {
+    "FLOW": "PFM",
+    "PARENT_LOT": "04NFVF",
+    "DEVICE": "Y01G61K256M32JE-B010",
+    "PRODUCTID": "NUM02071N00",
+    "StepID": 6454,
+    "MachineID": "B5_SCOP_10",
+    "StepIn_Date": "2/2/2019 0:01",
+    "StepOut_Date": "2/2/2019 0:39",
+    "Quantity": 25,
+    "TT_CUST_SOD": "2/4/2019",
+    "PlanID": "20210708_1"
+  },
+  {
+    "FLOW": "PFM",
+    "PARENT_LOT": "04NFVQ",
+    "DEVICE": "Y01G61K256M32JE-B010",
+    "PRODUCTID": "NUM02071N00",
+    "StepID": 6370,
+    "MachineID": "B5_WFCL_01",
+    "StepIn_Date": "2/2/2019 0:37",
+    "StepOut_Date": "2/2/2019 0:51",
+    "Quantity": 25,
+    "TT_CUST_SOD": "2/6/2019",
+    "PlanID": "20210708_1"
+  },
+  {
+    "FLOW": "PFM",
+    "PARENT_LOT": "04NFCU",
+    "DEVICE": "Y01G61K256M32JE-B010",
+    "PRODUCTID": "NUM02071N00",
+    "StepID": 6360,
+    "MachineID": "B5_SORT_01",
+    "StepIn_Date": "2/2/2019 0:42",
+    "StepOut_Date": "2/2/2019 0:52",
+    "Quantity": 25,
+    "TT_CUST_SOD": "2/5/2019",
+    "PlanID": "20210708_1"
+  },
+  {
+    "FLOW": "PFM",
+    "PARENT_LOT": "04NFVP",
+    "DEVICE": "Y01G61K256M32JE-B010",
+    "PRODUCTID": "NUM02071N00",
+    "StepID": 6360,
+    "MachineID": "B5_SORT_01",
+    "StepIn_Date": "2/2/2019 0:45",
+    "StepOut_Date": "2/2/2019 1:39",
+    "Quantity": 25,
+    "TT_CUST_SOD": "2/6/2019",
+    "PlanID": "20210708_1"
+  },
+  {
+    "FLOW": "PPL",
+    "PARENT_LOT": "04UYVX",
+    "DEVICE": "AM10725CW",
+    "PRODUCTID": "UM909311N00",
+    "StepID": 6920,
+    "MachineID": "B5_SHTZ_01",
+    "StepIn_Date": "2/2/2019 0:48",
+    "StepOut_Date": "2/2/2019 0:48",
+    "Quantity": 25,
+    "TT_CUST_SOD": "2/2/2019",
+    "PlanID": "20210708_1"
+  },
+  {
+    "FLOW": "PFM",
+    "PARENT_LOT": "04NFAF",
+    "DEVICE": "Y01G61K256M32JE-B010",
+    "PRODUCTID": "NUM02071N00",
+    "StepID": 6845,
+    "MachineID": "B5_SCOP_05",
+    "StepIn_Date": "2/2/2019 0:50",
+    "StepOut_Date": "2/2/2019 0:56",
+    "Quantity": 25,
+    "TT_CUST_SOD": "2/2/2019",
+    "PlanID": "20210708_1"
+  }
+]
