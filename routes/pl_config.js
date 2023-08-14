@@ -21,6 +21,7 @@ const Time = moment().tz(process.env.TZ).format('MM/DD/YYYY');
 
 router.post('/add', authenticateJWT, async (req, res)=>{
     const { name,layout,created_by } = req.body;
+    let seenMachineIds = new Set();
 
     //! cek role
     if(req.user.role!=='Admin'){
@@ -28,20 +29,38 @@ router.post('/add', authenticateJWT, async (req, res)=>{
     }
     
     let dataLayout = layout
-    .filter(item => item.machine.length > 0)
-    .map(item => {
-        return {
-            process: new ObjectId(item.processID),
-            machine: item.machine.map(mach => {
-            return {
-                machine_id: new ObjectId(mach.machine_id), 
-                chambers: mach.chambers.map(cham => {
-                return new ObjectId(cham.chamber_id );
-                })
-            };
+    .filter(item =>item.machine.length >0)
+    .map(l=>{
+        return{
+            process: new ObjectId(l.processID),
+            machine: l.machine
+            .filter(m=>{
+                if (seenMachineIds.has(m.machine_id)) {
+                    return false
+                } else {
+                    seenMachineIds.add(m.machine_id)
+                    return true
+                }
             })
-        };
-    });
+            .map(m => {
+                let seenChamberIds = new Set();
+                
+                return {
+                    machine_id: new ObjectId(m.machine_id),
+                    chambers: m.chambers
+                        .filter(c => {
+                            if (seenChamberIds.has(c.chamber_id)) {
+                                return false;
+                            } else {
+                                seenChamberIds.add(c.chamber_id);
+                                return true;
+                            }
+                        })
+                        .map(c => c.chamber_id)
+                };
+            })
+        }
+    })
 
     try {
         const findConfig = await PL_Config.findOne({name:name})
@@ -57,6 +76,8 @@ router.post('/add', authenticateJWT, async (req, res)=>{
 
         if (result.valid==false) {
             throw new Error("Config Invalid data");
+        }else{
+            console.log('matnap')
         }
         
         const newConfig = new PL_Config({ name, layout, created_at, created_by, isActive, isDeleted });
@@ -149,6 +170,117 @@ router.post('/data', authenticateJWT, async (req, res) => {
     }
 })
 
+router.post('/active', authenticateJWT, async (req, res) => {
+    // res.send(req.user.role);
+    const { configID } = req.body;
+
+    //! cek role
+    if(req.user.role!=='Admin'){
+        return res.sendStatus(403);
+    }
+
+    try {
+        const seachConfig = await PL_Config.find({isDeleted:false,isActive:true}) //! find yang lagi active
+
+        if (seachConfig.length!==0) {
+            await PL_Config.findByIdAndUpdate(seachConfig[0]._id, {isActive: false}) //! update yang lagi active jadi inactive
+        }        
+
+        await PL_Config.findByIdAndUpdate(configID, {isActive: true}) //! active based on configID
+        const activeConfig = await PL_Config.findById(configID) //! find yang lagi active
+
+        res.status(200).send({stat:'success', data:"Configuration " + activeConfig.name+" is actived"});
+    } catch (error) {
+
+        res.status(200).send({stat:'failed', data:"Failed to activate"});
+    }
+});
+
+router.post('/delete', authenticateJWT, async (req, res) => {
+    // res.send(req.user.role);
+    const { configID } = req.body;
+
+    //! cek role
+    if(req.user.role!=='Admin'){
+        return res.sendStatus(403);
+    }
+
+    try {
+        //! find config using id update and add information deleted_at
+        const config = await PL_Config.findByIdAndUpdate(configID, {isDeleted: true, deleted_at: Time})
+
+        if (!config) {
+            // res.status(400).json({message: 'Configuration failed to delete'});
+            res.status(200).send({stat:'failed', data:"Configuration failed to delete"});
+        } else {
+            // res.status(200).json({message: 'Configuration successfully deleted'});
+            res.status(200).send({stat:'success', data:"Configuration successfully deleted"});
+        }
+
+    } catch (err) {
+        // res.status(400).json({message: 'Configuration failed to delete', error: err.message});
+        es.status(200).send({stat:'failed', data:err.message});
+    }
+});
+
+router.post('/update', authenticateJWT, async (req, res) => {
+    const { configID,layout } = req.body;
+    let seenMachineIds = new Set();
+
+    if(req.user.role!=='Admin'){
+        return res.sendStatus(403);
+    }
+
+    let dataLayout = layout
+    .filter(item =>item.machine.length >0)
+    .map(l=>{
+        return{
+            process: new ObjectId(l.processID),
+            machine: l.machine
+            .filter(m=>{
+                if (seenMachineIds.has(m.machine_id)) {
+                    return false
+                } else {
+                    seenMachineIds.add(m.machine_id)
+                    return true
+                }
+            })
+            .map(m => {
+                let seenChamberIds = new Set();
+                
+                return {
+                    machine_id: new ObjectId(m.machine_id),
+                    chambers: m.chambers
+                        .filter(c => {
+                            if (seenChamberIds.has(c.chamber_id)) {
+                                return false;
+                            } else {
+                                seenChamberIds.add(c.chamber_id);
+                                return true;
+                            }
+                        })
+                        .map(c => c.chamber_id)
+                };
+            })
+        }
+    })
+
+    try {
+
+        let layout=dataLayout
+
+        await PL_Config.findByIdAndUpdate(configID, {layout: layout})
+        let updateConfig = await PL_Config.findById({_id:configID})
+
+        res.status(200).send({stat:'success', data:"Configuration "+updateConfig.name+" successfully updated"});
+        
+    } catch (error) {
+        
+        res.status(200).send({stat:'failed', data:error});
+    }
+
+});
+
 
 
 //! MACHINE AND CHAMBER
@@ -184,17 +316,21 @@ router.post('/machine/list', authenticateJWT, async (req, res)=>{
             data = await PL_Machine.find({isDeleted:{$in:[false,null]}, machineCode: { $regex: search, $options:'i' }});
         }
         
+        let process = await PL_Process.find({})
+
         //! buat object masukin kedalem array
         listStep.push(
-            data.map(item => (
-                {
+            data.map(item => {
+                let processItem = process.find(p => p._id.toString() === item.machineTypeProcess.toString());
+                return{
                     _id: item._id,
                     machineCode:item.machineCode,
                     machineName:item.machineName,
                     machineType:item.machineType,
-                    machineLocation:item.machineLocation
+                    machineLocation:item.machineLocation,
+                    machineTypeProcess: processItem ? processItem.processCode : ''
                 }
-            ))
+            })
         );
         listStep.push({'maxPage':maxPage})
 
@@ -227,15 +363,15 @@ router.post('/machine/getone', authenticateJWT, async (req, res)  =>{
 
 router.post ('/machine/update', authenticateJWT, async (req, res) => {
     // res.send(req.user.role);
-    const { id,machineCode, machineName, machineType, machineLocation} = req.body;
+    const { id,machineCode, machineName, machineType, machineLocation, machineTypeProcess} = req.body;
 
     //! cek role
     if(req.user.role!=='Admin'){
         return res.sendStatus(403);
     }
 
-    try {
-        await PL_Machine.findByIdAndUpdate(id, {machineCode: machineCode, machineName:machineName, machineType:machineType, machineLocation:machineLocation})
+    try {   
+        await PL_Machine.findByIdAndUpdate(id, {machineCode: machineCode, machineName:machineName, machineType:machineType, machineLocation:machineLocation, machineTypeProcess:machineTypeProcess})
 
         res.status(200).send({stat:'success', data:"Machine Code "+machineCode+" successfully update"});
 
@@ -248,7 +384,7 @@ router.post ('/machine/update', authenticateJWT, async (req, res) => {
 
 router.post ('/machine/add', authenticateJWT, async (req, res) => {
     // res.send(req.user.role);
-    const { machineCode, machineName, machineType, machineLocation} = req.body;
+    const { machineCode, machineName, machineType, machineLocation ,machineTypeProcess} = req.body;
     // console.log(req.body)
     // //! cek role
     if(req.user.role!=='Admin'){
@@ -256,8 +392,8 @@ router.post ('/machine/add', authenticateJWT, async (req, res) => {
     }
 
     try {
-        const findMachineCode = await PL_Machine.findOne({machineCode:machineCode})
-        console.log(findMachineCode)
+        const findMachineCode = await PL_Machine.findOne({machineCode:machineCode, machineTypeProcess:new ObjectId(machineTypeProcess)})
+
        if(!findMachineCode){
 
         var v = new Validator();
@@ -266,8 +402,8 @@ router.post ('/machine/add', authenticateJWT, async (req, res) => {
         if (result.valid==false) {
             throw new Error("Invalid data");
         }
-        
-        const newMachine = new PL_Machine({ machineCode, machineName, machineType, machineLocation});
+
+        const newMachine = new PL_Machine({ machineCode, machineName, machineType, machineLocation, machineTypeProcess});
         await newMachine.save(); // ! save datanya
 
         res.status(200).send({stat:'success', data:"Machine "+machineCode+" successfully added"});
@@ -316,16 +452,22 @@ router.post('/chamber/list', authenticateJWT, async (req, res)=>{
         }else{
             data = await PL_Chamber.find({isDeleted:{$in:[false,null]}, chamberCode: { $regex: search, $options:'i' }});
         }
-        
+
+        let process = await PL_Process.find({})
+
         //! buat object masukin kedalem array
         listStep.push(
-            data.map(item => (
+            data.map(item => 
                 {
-                    _id: item._id,
-                    chamberName:item.chamberName,
-                    chamberCode:item.chamberCode
+                    let processItem = process.find(p => p._id.toString() === item.chamberTypeProcess.toString());
+                    return{
+                        _id: item._id,
+                        chamberName:item.chamberName,
+                        chamberCode:item.chamberCode,
+                        chamberTypeProcess:processItem ? processItem.processCode : ''
+                    }
                 }
-            ))
+            )
         );
         listStep.push({'maxPage':maxPage})
 
@@ -358,7 +500,7 @@ router.post('/chamber/getone', authenticateJWT, async (req, res)  =>{
 
 router.post ('/chamber/update', authenticateJWT, async (req, res) => {
     // res.send(req.user.role);
-    const { id,chamberCode, chamberName} = req.body;
+    const { id,chamberCode, chamberName, chamberTypeProcess} = req.body;
 
     //! cek role
     if(req.user.role!=='Admin'){
@@ -366,7 +508,7 @@ router.post ('/chamber/update', authenticateJWT, async (req, res) => {
     }
 
     try {
-        await PL_Chamber.findByIdAndUpdate(id, {chamberCode: chamberCode,chamberName:chamberName})
+        await PL_Chamber.findByIdAndUpdate(id, {chamberCode: chamberCode,chamberName:chamberName, chamberTypeProcess:chamberTypeProcess})
 
         res.status(200).send({stat:'success', data:"Chamber Code "+chamberCode+" successfully update"});
 
@@ -379,15 +521,16 @@ router.post ('/chamber/update', authenticateJWT, async (req, res) => {
 
 router.post ('/chamber/add', authenticateJWT, async (req, res) => {
     // res.send(req.user.role);
-    const { chamberCode, chamberName} = req.body;
-    // console.log(req.body)
+    const { chamberCode, chamberName, chamberTypeProcess} = req.body;
+
     // //! cek role
     if(req.user.role!=='Admin'){
         return res.sendStatus(403);
     }
 
     try {
-        const findChamberCode = await PL_Chamber.findOne({chamberCode:chamberCode})
+        const findChamberCode = await PL_Chamber.findOne({chamberCode:chamberCode, chamberTypeProcess:new ObjectId(chamberTypeProcess)})
+        
 
        if(!findChamberCode){
 
@@ -398,7 +541,7 @@ router.post ('/chamber/add', authenticateJWT, async (req, res) => {
             throw new Error("Invalid data");
         }
         
-        const newChamber = new PL_Chamber({chamberCode,chamberName});
+        const newChamber = new PL_Chamber({chamberCode, chamberName, chamberTypeProcess});
         await newChamber.save(); // ! save datanya
 
         res.status(200).send({stat:'success', data:"Chamber"+chamberCode+" successfully added"});
@@ -438,12 +581,26 @@ router.get('/machine/all', authenticateJWT, async (req, res)=>{
     try {
         let machines = await PL_Machine.find({})
 
-        let listMachines = machines.map(machine =>(
-            {
-                value: machine._id,
-                label: machine.machineCode+' - '+machine.machineName
+        const listMachines = machines.reduce((acc, curr) => {
+            if (!acc[curr.machineTypeProcess]) {
+                acc[curr.machineTypeProcess] = [];
             }
-        ))
+            acc[curr.machineTypeProcess].push(
+                {
+                    value: curr._id,
+                    label: curr.machineCode+' - '+curr.machineName
+                }
+            );
+            return acc;
+        }, {});
+
+
+        // let listMachines = machines.map(machine =>(
+        //     {
+        //         value: machine._id,
+        //         label: machine.machineCode+' - '+machine.machineName
+        //     }
+        // ))
         
         return res.status(200).send({stat:'success',data:listMachines});
     } catch (error) {
@@ -458,12 +615,25 @@ router.get('/chamber/all', authenticateJWT, async (req, res)=>{
     try {
         let chambers = await PL_Chamber.find({})
 
-        let listChambers = chambers.map(chamber=>(
-            {
-                value: chamber._id,
-                label: chamber.chamberCode+' - '+chamber.chamberName
+        const listChambers = chambers.reduce((acc, curr) => {
+            if (!acc[curr.chamberTypeProcess]) {
+                acc[curr.chamberTypeProcess] = [];
             }
-        ))
+            acc[curr.chamberTypeProcess].push(
+                {
+                    value: curr._id,
+                    label: curr.chamberCode+' - '+curr.chamberName
+                }
+            );
+            return acc;
+        }, {});
+
+        // let listChambers = chambers.map(chamber=>(
+        //     {
+        //         value: chamber._id,
+        //         label: chamber.chamberCode+' - '+chamber.chamberName
+        //     }
+        // ))
         
         return res.status(200).send({stat:'success',data:listChambers});
     } catch (error) {

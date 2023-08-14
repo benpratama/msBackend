@@ -3,7 +3,24 @@ var plConfigSchema = {
     "type": "object",
     "properties":{
         "name":{"type": "string"},
-        "layout":{"type": "array"},
+        "layout":{
+            "type": "array",
+            "properties":{
+                "type":"object",
+                "properties":{
+                    "process":{"type": "string"},
+                    "machine":{
+                        "type": "array",
+                        "properties":{
+                            "machine_id":{"type": "string"},
+                            "chambers":{"type": "array"}
+                        },
+                        "required": ["machine_id"]
+                    }
+                },
+                "required": ["process"]
+            }
+        },
         "created_at":{"type": "string"},
         "isActive":{"type": "boolean"},
         "isDeleted":{"type": "boolean"},

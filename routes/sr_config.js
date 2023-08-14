@@ -253,6 +253,7 @@ router.post('/data', authenticateJWT, async (req, res) => {
     }
 })
 
+//! ambil layout yang active
 router.get('/layout', authenticateJWT, async (req, res)=>{
     
     // if(req.user.role!=='Admin'){

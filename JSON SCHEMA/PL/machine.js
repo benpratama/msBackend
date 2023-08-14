@@ -6,8 +6,9 @@ var plMachineSchema = {
         "machineName":{"type": "string"},
         "machineType":{"type": "string"},
         "machineLocation":{"type": "string"},
+        "machineTypeProcess":{"type": "string"}
     },
-    "required": ["machineCode","machineName","machineType","machineLocation"]
+    "required": ["machineCode","machineName","machineType","machineLocation","machineTypeProcess"]
 }
 
 module.exports = plMachineSchema;

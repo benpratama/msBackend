@@ -5,6 +5,7 @@ const SR_MachineSchema = new mongoose.Schema({
     machineName: { type: String, required: true},
     machineType: { type: String, required: true},
     machineLocation: { type: String, required: true},
+    machineTypeProcess: { type: mongoose.ObjectId, required: true},
 },{ versionKey: false });
 
 module.exports = mongoose.model('pl_machines', SR_MachineSchema);

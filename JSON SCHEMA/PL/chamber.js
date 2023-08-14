@@ -3,9 +3,10 @@ var plChamberSchema = {
     "type": "object",
     "properties":{
         "chamberCode":{"type": "string"},
-        "chamberName":{"type": "string"}
+        "chamberName":{"type": "string"},
+        "chamberTypeProcess":{"type": "string"}
     },
-    "required": ["chamberName","chamberCode"]
+    "required": ["chamberName","chamberCode","chamberTypeProcess"]
 }
 
 module.exports = plChamberSchema;
