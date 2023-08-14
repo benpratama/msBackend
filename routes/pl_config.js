@@ -76,10 +76,8 @@ router.post('/add', authenticateJWT, async (req, res)=>{
 
         if (result.valid==false) {
             throw new Error("Config Invalid data");
-        }else{
-            console.log('matnap')
         }
-        
+
         const newConfig = new PL_Config({ name, layout, created_at, created_by, isActive, isDeleted });
         await newConfig.save(); // ! save datanya
 
@@ -163,7 +161,6 @@ router.post('/data', authenticateJWT, async (req, res) => {
     try {
 
         const config = await PL_Config.findById(new ObjectId(id)) //! find yang lagi active
-        console.log(config)
         res.send({'data':config})
     } catch (error) {
         return res.status(400).json({ message: "no data" });

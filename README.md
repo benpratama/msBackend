@@ -6,3 +6,7 @@
 ### 2023-08-14 10:14
 - PL Config finishe
 - update add machine and chamber with process type
+
+# update v2.1
+### 2023-08-14 10:16
+- clean console.log
