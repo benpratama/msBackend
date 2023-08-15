@@ -14,3 +14,8 @@
 # update v3
 ### 2023-08-15 16:09
 - update API PL Merge data (jadiin bentuk data json)
+
+# update v3.1
+### 2023-08-15 16:11
+- pl_config (bentuk data layout yang active)
+- Pl_data (benerin data di function checkConvertData )

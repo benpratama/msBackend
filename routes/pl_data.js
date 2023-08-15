@@ -26,14 +26,17 @@ async function checkConvertData(rawData){
         }else{
             var Machine = Machines.find(machineObj => machineObj.machineCode === data['MACHINE_ID']);
 
-            if (data['CHAMBER_ID']!== null){
-                var CHObj = Chambers.find(chamberObj => chamberObj.chamberCode === data['CHAMBER_ID']);
+            if (data['CHAMBER_ID']!== null && data['CHAMBER_ID']!==''){
+                var CHObj = Chambers.find(chamberObj => chamberObj.chamberCode === data['CHAMBER_ID'] && chamberObj.chamberTypeProcess.toString()===Machine.machineTypeProcess.toString() );
+                if (CHObj === undefined) {
+                    return true
+                }
                 var Chamber = CHObj._id
             }else{
-                var Chamber = data['CHAMBER_ID']
+                var Chamber = null
             }
 
-            if (Machine === undefined || Chamber === undefined) {
+            if (Machine === undefined) {
                 return true
             }
             cleanData.push({
@@ -90,9 +93,9 @@ router.post('/insert', authenticateJWT, async (req, res) => {
                 )
                 newData.save();
             }
+            return res.status(200).send({stat:'success',data:'data added'});
         }
     })
-    return res.status(200).send({stat:'success',data:'data added'});
 })
 
 router.post('/filter', authenticateJWT, async (req, res) => {
@@ -147,7 +150,7 @@ router.post('/filter', authenticateJWT, async (req, res) => {
         )
     }
     
-    return res.status(200).send({stat:'success',data:cleanData});
+    return res.status(200).send({stat:'success',data:cleanData,count:cleanData.length});
 })
 
 router.post('/delete', authenticateJWT, async (req, res) => {

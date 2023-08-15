@@ -278,6 +278,54 @@ router.post('/update', authenticateJWT, async (req, res) => {
 
 });
 
+//! ambil layout yang active
+router.get('/layout', authenticateJWT, async (req, res)=>{
+
+    try {
+        let activeLayout = await PL_Config.find({isActive:true})
+        let processes_ = await PL_Process.find({})
+        let machines_ = await PL_Machine.find({})
+        let chambers_ = await PL_Chamber.find({})
+
+        let result={}
+
+        activeLayout[0]['layout'].forEach(l=>{
+            let process = processes_.find(p_=>p_._id.toString()===l.process.toString())
+            if (process) {
+                if(!result[process.processOrder]){
+                    result[process.processOrder]={
+                        "processCode": process.processCode,
+                        "processName": process.processName,
+                        "machines":l.machine.map(m=>{
+                            let machine = machines_.find(m_ => m_._id.toString() === m.machine_id.toString())
+                            if(machine){
+                                return {
+                                    machineCode:machine.machineCode,
+                                    machineName:machine.machineName,
+                                    machineType:machine.machineType,
+                                    machineLocation:machine.machineLocation,
+                                    chambers:m.chambers.map(c=>{
+                                        let chamber = chambers_.find(c_=>c_._id==c)
+                                        if (chamber){
+                                            return{
+                                                chamberCode:chamber.chamberCode,
+                                                chamberName:chamber.chamberName,
+                                            }
+                                        }
+                                    })
+                                }
+                            }
+                        })
+                    }
+                }
+            }
+        })
+        
+        return res.status(200).send({stat:'success',data:result});
+    } catch (error) {
+        return res.status(200).send({stat:'failed',data:null});
+    }
+});
 
 
 //! MACHINE AND CHAMBER
