@@ -323,14 +323,14 @@ function mergeFile(r_sput, r_plate, r_PR_coat,r_PR_Step,r_PR_Devp, r_ETCH, r_fin
     // format Date and replace undefined or null with ''
     for (let obj of arrayOfObjects) {
         // console.log(obj.Date)
-        obj.Date = obj.Date ? moment(obj.Date).format('DD/MM/YYYY hh:mm:ss A') : '';
+        obj.Date = obj.Date ? moment(obj.Date).format('MM/DD/YYYY hh:mm:ss A') : '';
         for (let key in obj) {
             obj[key] = obj[key] ?? '';
         }
     }
     // console.log(arrayOfObjects)
-    let json = JSON.stringify(arrayOfObjects);
-    return json
+    // let json = JSON.stringify(arrayOfObjects);
+    return arrayOfObjects
 }
 
 router.post('/upload', upload.array('files'), async (req, res) => {
@@ -389,7 +389,7 @@ router.post('/upload', upload.array('files'), async (req, res) => {
     }
   //   console.log(r_PR)
     let finalJson = mergeFile(r_sput, r_plate, r_PR_coat,r_PR_Step,r_PR_Devp, r_ETCH, r_final);
-    res.json(finalJson);
+    res.status(200).send(finalJson);
 });
 
 module.exports = router;

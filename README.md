@@ -10,3 +10,7 @@
 # update v2.1
 ### 2023-08-14 10:16
 - clean console.log
+
+# update v3
+### 2023-08-15 16:09
+- update API PL Merge data (jadiin bentuk data json)
