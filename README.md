@@ -19,3 +19,7 @@
 ### 2023-08-15 16:11
 - pl_config (bentuk data layout yang active)
 - Pl_data (benerin data di function checkConvertData )
+
+# update v3.2
+### 2023-08-16 20:08
+- ada tambahin hasil merge file jadi json format

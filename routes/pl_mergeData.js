@@ -328,9 +328,13 @@ function mergeFile(r_sput, r_plate, r_PR_coat,r_PR_Step,r_PR_Devp, r_ETCH, r_fin
             obj[key] = obj[key] ?? '';
         }
     }
-    // console.log(arrayOfObjects)
-    // let json = JSON.stringify(arrayOfObjects);
-    return arrayOfObjects
+
+    //! OLD
+    let json = JSON.stringify(arrayOfObjects);
+    return json
+
+    //! AMBIL DATA BENTUK JSON
+    // return arrayOfObjects
 }
 
 router.post('/upload', upload.array('files'), async (req, res) => {
@@ -389,7 +393,11 @@ router.post('/upload', upload.array('files'), async (req, res) => {
     }
   //   console.log(r_PR)
     let finalJson = mergeFile(r_sput, r_plate, r_PR_coat,r_PR_Step,r_PR_Devp, r_ETCH, r_final);
-    res.status(200).send(finalJson);
+    //!! OLD
+    res.json(finalJson);
+
+    //!NEW 
+    // res.status(200).send(finalJson);
 });
 
 module.exports = router;
