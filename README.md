@@ -23,3 +23,7 @@
 # update v3.2
 ### 2023-08-16 20:08
 - ada tambahin hasil merge file jadi json format
+
+# update v3.3
+### 2023-08-21 17:41
+- pl_data => tambah informasi process

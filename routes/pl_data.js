@@ -8,6 +8,7 @@ const authenticateJWT = require('../authMiddleware')
 const PL_Records = require('../models/PL_Records')
 const PL_Machine = require('../models/PL_Machine')
 const PL_Chamber = require('../models/PL_Chamber')
+const PL_Processes = require('../models/PL_Processes');
 
 const router = express.Router();
 const { ObjectId } = require('mongodb');
@@ -42,7 +43,7 @@ async function checkConvertData(rawData){
             cleanData.push({
                 "Date":data['Date'],
                 "PieceID":data['PieceID'],
-                'LOT_ID':data['PieceID'],
+                'LOT_ID':data['LOT_ID'],
                 "WAFER_ID":data['WAFER_ID'],
                 "MACHINE_ID":Machine._id,
                 "CHAMBER_ID":Chamber,
@@ -66,7 +67,6 @@ router.post('/insert', authenticateJWT, async (req, res) => {
             return res.status(200).send({stat:'failed',data:'data Error'});
         }else{
             for (const cleanObj of data) {
-
                 var Date = moment.tz(cleanObj.Date, "MM/DD/YYYY hh:mm A", "Asia/Taipei")
                 var PieceID = cleanObj.PieceID
                 var LOT_ID = cleanObj.LOT_ID
@@ -101,6 +101,7 @@ router.post('/insert', authenticateJWT, async (req, res) => {
 router.post('/filter', authenticateJWT, async (req, res) => {
     const Machines =  await PL_Machine.find()
     const Chambers =  await PL_Chamber.find()
+    const Processes = await PL_Processes.find()
 
     var date = req.body
     var cleanData=[]
@@ -122,6 +123,7 @@ router.post('/filter', authenticateJWT, async (req, res) => {
     for (const record of records) {
     
         var MachineData = Machines.find(machineObj => machineObj._id.equals(new ObjectId(record['MACHINE_ID'])));
+        var ProcessData = Processes.find(processObj => processObj._id.equals(new ObjectId(MachineData['machineTypeProcess'])))
         
         if (record['CHAMBER_ID']!==null) {
             var Chamber_obj =Chambers.find(chamberObj => chamberObj._id.equals(new ObjectId(record['CHAMBER_ID'])));
@@ -134,6 +136,7 @@ router.post('/filter', authenticateJWT, async (req, res) => {
             {
                 "_id":record._id,
                 "Date":record.Date,
+                "Process":ProcessData.processCode,
                 "PieceID":record.PieceID,
                 "LOT_ID":record.LOT_ID,
                 "WAFER_ID":record.WAFER_ID,
@@ -148,6 +151,7 @@ router.post('/filter', authenticateJWT, async (req, res) => {
                 "GSI": record.GSI
             }
         )
+        cleanData.sort((a, b) => new Date(a.Date) - new Date(b.Date));
     }
     
     return res.status(200).send({stat:'success',data:cleanData,count:cleanData.length});
