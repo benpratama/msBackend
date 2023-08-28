@@ -317,6 +317,16 @@ function mergeFile(r_sput, r_plate, r_PR_coat,r_PR_Step,r_PR_Devp, r_ETCH, r_fin
         };
     });
 
+    //! tambahin 1 msec
+    arrayOfObjects.forEach(item => {
+        let date = moment(item.Date);
+      
+        if (date.millisecond() === 999) {
+          date.add(1, 'milliseconds');
+          item.Date = date.toISOString();
+        }
+      });
+
     // sort data by Date
     arrayOfObjects = _.orderBy(arrayOfObjects, ['Date'], ['asc']);
     // console.log(arrayOfObjects)
@@ -330,11 +340,11 @@ function mergeFile(r_sput, r_plate, r_PR_coat,r_PR_Step,r_PR_Devp, r_ETCH, r_fin
     }
 
     //! OLD
-    let json = JSON.stringify(arrayOfObjects);
-    return json
+    // let json = JSON.stringify(arrayOfObjects);
+    // return json
 
-    //! AMBIL DATA BENTUK JSON
-    // return arrayOfObjects
+    //! AMBIL DATA BENTUK JSON NEW
+    return arrayOfObjects
 }
 
 router.post('/upload', upload.array('files'), async (req, res) => {
@@ -394,10 +404,10 @@ router.post('/upload', upload.array('files'), async (req, res) => {
   //   console.log(r_PR)
     let finalJson = mergeFile(r_sput, r_plate, r_PR_coat,r_PR_Step,r_PR_Devp, r_ETCH, r_final);
     //!! OLD
-    res.json(finalJson);
+    // res.json(finalJson);
 
     //!NEW 
-    // res.status(200).send(finalJson);
+    res.status(200).send(finalJson);
 });
 
 module.exports = router;

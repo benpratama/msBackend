@@ -31,3 +31,7 @@
 # update v4
 ### 2023-08-28 13:00
 - pl_data => tambahin delete by tanggal
+
+# update v4.1
+### 2023-08-28 13:00
+- pl_mergeData => tambahin 1 msec buat yang msec 999
