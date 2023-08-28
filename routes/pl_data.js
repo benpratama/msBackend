@@ -168,6 +168,26 @@ router.post('/delete', authenticateJWT, async (req, res) => {
     }
 });
 
+router.post('/delete2', authenticateJWT, async (req, res) => {
+    var date = req.body
+
+    var startDate = moment(date.startDate,'MM/DD/YYYY hh:mm:ss a')
+    var endDate = moment(date.endDate,'MM/DD/YYYY hh:mm:ss a')
+
+    try {
+        const result = await PL_Records.deleteMany({
+            Date:{
+                $gte: startDate,
+                $lte: endDate
+            }
+        });
+        // console.log(result.deletedCount + " documents deleted.");
+        res.send(result.deletedCount + " documents deleted.")
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('An error occurred while trying to delete documents');
+    }
+});
 
 
 module.exports = router;

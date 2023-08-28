@@ -27,3 +27,7 @@
 # update v3.3
 ### 2023-08-21 17:41
 - pl_data => tambah informasi process
+
+# update v4
+### 2023-08-28 13:00
+- pl_data => tambahin delete by tanggal
