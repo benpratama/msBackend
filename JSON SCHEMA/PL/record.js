@@ -19,8 +19,9 @@ var plConfigSchema = {
         "RI":{"type": "number"},
 
         "GSI":{"type": "number"},
+        "PORT":{"type": "number"},
     },
-    "required": ["Date","PieceID","LOT_ID","WAFER_ID","MACHINE_ID","DEVICE"]
+    "required": ["Date","PieceID","LOT_ID","WAFER_ID","MACHINE_ID","DEVICE","PORT"]
 }
 
 module.exports = plConfigSchema;

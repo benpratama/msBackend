@@ -234,6 +234,283 @@ function cal__CycleTime (mergeData){
     return result
 }
 
+function adjustMinutesAndFormatISO(dateString, minutes) {
+    // Parse the ISO date string
+    const date = new Date(dateString);
+
+    // Check if the date is valid
+    if (isNaN(date.getTime())) {
+        return 'Invalid date format. Expected ISO 8601 format.';
+    }
+
+    // Adjust minutes
+    date.setMinutes(date.getMinutes() + minutes);
+
+    // Format the date back to MM/DD/YYYY HH:mm
+    const formattedDate = `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}/${date.getFullYear()} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+
+    return formattedDate;
+}
+
+// buat bikin timeseriess data
+function generateTimeSeries(start, end, intervalMinutes) {
+    let startTime = new Date(start);
+    const endTime = new Date(end);
+    const timeSeries = {};
+
+    while (startTime <= endTime) {
+        // Format the current time
+        const formattedTime = `${(startTime.getMonth() + 1).toString().padStart(2, '0')}/${startTime.getDate().toString().padStart(2, '0')}/${startTime.getFullYear()} ${startTime.getHours().toString().padStart(2, '0')}:${startTime.getMinutes().toString().padStart(2, '0')}`;
+        
+        // Add to dictionary with count 0
+        timeSeries[formattedTime] = { count: 0 };
+
+        // Add interval
+        startTime = new Date(startTime.getTime() + intervalMinutes * 60000);
+    }
+
+    // Check if the last interval surpasses the end time and add it if it doesn't
+    if (startTime > endTime) {
+        const lastTime = `${(endTime.getMonth() + 1).toString().padStart(2, '0')}/${endTime.getDate().toString().padStart(2, '0')}/${endTime.getFullYear()} ${endTime.getHours().toString().padStart(2, '0')}:${endTime.getMinutes().toString().padStart(2, '0')}`;
+        timeSeries[lastTime] = { count: 0 };
+    }
+
+    return timeSeries;
+}
+
+function incrementCount(dictionary, dateTime) {
+    /// Split the dateTime into date and time
+    const [date, time] = dateTime.split(' ');
+    const [month, day, year] = date.split('/');
+
+    // Add zero padding to month and day if necessary
+    const formattedMonth = month.length === 1 ? '0' + month : month;
+    const formattedDay = day.length === 1 ? '0' + day : day;
+
+    // Add zero padding to time if necessary
+    const formattedTime = time.length === 4 ? '0' + time : time;
+
+    // Combine the formatted date and time
+    var formattedDateTime = `${formattedMonth}/${formattedDay}/${year} ${formattedTime}`;
+
+    // Check if the formattedDateTime exists in the dictionary
+    if (dictionary.hasOwnProperty(formattedDateTime)) {
+        dictionary[formattedDateTime].count += 1;
+    } else {
+        console.log(`DateTime ${formattedDateTime} not found in the dictionary.`);
+    }
+    return dictionary;
+}
+
+function transformDictionaryToArrays(dictionary) {
+
+    const result = { time: [], count: [] };
+
+    for (const [key, value] of Object.entries(dictionary)) {
+        // Parse the date-time string and convert to milliseconds
+        const [datePart, timePart] = key.split(' ');
+        const [month, day, year] = datePart.split('/');
+        const [hours, minutes] = timePart.split(':');
+        const date = new Date(year, month - 1, day, hours, minutes);
+        const timeInMilliseconds = date.getTime();
+
+        result.time.push(key);
+        result.count.push(value.count);
+    }
+    return result;
+}
+
+function mergeDictionaries(baseDict, mergeDict) {
+    // Iterate over the keys in the mergeDict
+    for (const key in mergeDict) {
+        if (mergeDict.hasOwnProperty(key)) {
+            // If the key exists in baseDict, update the count
+            if (baseDict.hasOwnProperty(key)) {
+                baseDict[key].count += mergeDict[key].count;
+            } else {
+                // Optional: Add the key to baseDict if it doesn't exist
+                baseDict[key] = mergeDict[key];
+            }
+        }
+    }
+    return baseDict;
+}
+
+function graph_Out(cleanData,minute){
+    let earliestStepIn = new Date('12-31-9999');
+    let latestStepOut = new Date('01-01-0000');
+    let interval = minute
+    var dic_result = {}
+
+    Object.values(cleanData).forEach(group => {
+        group.forEach(entry => {
+          const stepInDate = new Date(entry.StepIn_Date);
+          const stepOutDate = new Date(entry.StepOut_Date);
+      
+          if (stepInDate < earliestStepIn) {
+            earliestStepIn = stepInDate;
+          }
+      
+          if (stepOutDate > latestStepOut) {
+            latestStepOut = stepOutDate;
+          }
+        });
+    });
+
+
+    const start_time = adjustMinutesAndFormatISO(earliestStepIn,0);
+    const end_time = adjustMinutesAndFormatISO(latestStepOut,0);
+
+    const based_time_dictionary = generateTimeSeries(start_time, end_time, interval);
+
+    const time_dictionary = generateTimeSeries(start_time, end_time, interval);
+
+    listParentLot.forEach(element => {
+        for (let index = 0; index < cleanData[element].length; index++) {
+            if (cleanData[element][index]['StepID']=='6970') {
+                let time = cleanData[element][index]['StepOut_Date']
+                dic_result = incrementCount(time_dictionary,time)
+            }else{
+                dic_result= time_dictionary
+            }
+        }
+    })
+
+    const mergedDict = mergeDictionaries(based_time_dictionary, dic_result);
+    
+    let final_result = transformDictionaryToArrays(mergedDict)
+
+    return final_result
+}
+
+function graph_In(cleanData,minute){
+    let earliestStepIn = new Date('12-31-9999');
+    let latestStepOut = new Date('01-01-0000');
+    let interval = minute
+    var dic_result = {}
+
+    Object.values(cleanData).forEach(group => {
+        group.forEach(entry => {
+          const stepInDate = new Date(entry.StepIn_Date);
+          const stepOutDate = new Date(entry.StepOut_Date);
+      
+          if (stepInDate < earliestStepIn) {
+            earliestStepIn = stepInDate;
+          }
+      
+          if (stepOutDate > latestStepOut) {
+            latestStepOut = stepOutDate;
+          }
+        });
+    });
+
+    const start_time = adjustMinutesAndFormatISO(earliestStepIn,0);
+    const end_time = adjustMinutesAndFormatISO(latestStepOut,0);
+
+    const based_time_dictionary = generateTimeSeries(start_time, end_time, interval);
+
+    const time_dictionary = generateTimeSeries(start_time, end_time, interval);
+
+    listParentLot.forEach(element => {
+        for (let index = 0; index < cleanData[element].length; index++) {
+            if (cleanData[element][index]['StepID']=='6360') {
+                let time = cleanData[element][index]['StepIn_Date']
+                dic_result = incrementCount(time_dictionary,time)
+                
+            }
+        }
+    })
+
+    const mergedDict = mergeDictionaries(based_time_dictionary, dic_result);
+
+    let final_result = transformDictionaryToArrays(mergedDict)
+    
+    return final_result
+}
+
+function graph_WIP(cleanData,minute){
+    let earliestStepIn = new Date('12-31-9999');
+    let latestStepOut = new Date('01-01-0000');
+    let interval = minute
+    var dic_result = {}
+
+    Object.values(cleanData).forEach(group => {
+        group.forEach(entry => {
+          const stepInDate = new Date(entry.StepIn_Date);
+          const stepOutDate = new Date(entry.StepOut_Date);
+      
+          if (stepInDate < earliestStepIn) {
+            earliestStepIn = stepInDate;
+          }
+      
+          if (stepOutDate > latestStepOut) {
+            latestStepOut = stepOutDate;
+          }
+        });
+    });
+
+    const start_time = adjustMinutesAndFormatISO(earliestStepIn,0);
+    const end_time = adjustMinutesAndFormatISO(latestStepOut,0);
+
+    const based_time_dictionary = generateTimeSeries(start_time, end_time, interval);
+
+    const time_dictionary = generateTimeSeries(start_time, end_time, interval);
+
+    for (const key in cleanData) {
+        if (cleanData.hasOwnProperty(key)) {
+            // Iterate over each entry in the array for this key
+            cleanData[key].forEach(entry => {
+                const stepIn = new Date(entry.StepIn_Date);
+                const stepOut = new Date(entry.StepOut_Date);
+
+                // Iterate over each key in the dictionary
+                for (const dictKey in time_dictionary) {
+                    if (time_dictionary.hasOwnProperty(dictKey)) {
+                        const dictDate = new Date(dictKey);
+
+                        // Check if the dictionary date is within the range
+                        if (dictDate >= stepIn && dictDate <= stepOut) {
+                            time_dictionary[dictKey].count += 1;
+                        }
+                    }
+                }
+            });
+        }
+    }
+    const mergedDict = mergeDictionaries(based_time_dictionary, time_dictionary);
+
+    let final_result = transformDictionaryToArrays(mergedDict)
+    
+    return final_result
+}
+
+function calculateDifference(dataObject) {
+    const { data_in, data_WIP } = dataObject;
+
+    // Check if both arrays have the same length
+    if (data_in.length !== data_WIP.length) {
+        console.error("Arrays have different lengths");
+        return null;
+    }
+
+    // Calculate the difference
+    const difference = data_WIP.map((value, index) => value - data_in[index]);
+
+    delete dataObject.data_WIP
+
+    let newKeyName = "data_WIP";
+    dataObject[newKeyName] = difference;
+
+    return dataObject;
+}
+
+function dateToInteger(dateString) {
+    const date = new Date(dateString);
+    return date.getTime();
+}
+
+
+
 //============ API =============
 
 router.post('/list', authenticateJWT, async (req, res) => {
@@ -308,16 +585,27 @@ router.post('/insert', authenticateJWT, async (req, res) => {
     var data = groupingLOT(rawData) // ! data gelondongan yang udah ada hold process dna sudah di group per PARENT_LOT
     var resultCycleTime = cal__CycleTime(data)
     var grouData = groupingProcess(data) //! parameternya datamerge hasil groupingLOT
-    var inOut_data = cal__InOut(grouData)
+    var inOut_data = cal__InOut(grouData) //! tampilin jumlah data yang ditable depan
     
-    // cal_InfoT(grouData)
+    var graph_data = graph_Out(grouData,3) //! ini tanggalnya + sama data out (key "count")
+    var graphIn_data = graph_In(grouData,3) //! ini data IN ( 6360) 
+    var graphWIP_data = graph_WIP(grouData,3) //! ini data WIP
+    
 
-    // var avgOutput = (totOutTime/Tprocess).toFixed(2)
-    // var avgWIP = (totWIPTime/Tprocess).toFixed(2)
+    //! masukin array in sama WIP kedalem graph_data
+    let newKeyName = "data_in";
+    graph_data[newKeyName] = graphIn_data.count;
 
-    // res.send({'WIP':totWIPTime.toString(),'Out':totOutTime.toString(),'Tprocess':Tprocess})
-    // res.send('PlanID: '+planID+' successfully added')
+    let newKeyName2 = "data_WIP";
+    graph_data[newKeyName2] = graphWIP_data.count;
 
+    var result_dictionary = calculateDifference(graph_data) //! dara graph
+    
+
+    var start_date_data = dateToInteger(result_dictionary.time[0])
+    var end_date_data = dateToInteger(result_dictionary.time[result_dictionary.time.length-1])
+
+    // !!!!DARI SINI !!!!
     try {
         let steps = await SR_Steps.find()
         let findPlan = await SR_Schedules.find({planID:planID})
@@ -389,18 +677,20 @@ router.post('/insert', authenticateJWT, async (req, res) => {
             var output = inOut_data.Output
             var WIP = input-output
             var cycleTime = resultCycleTime
-            // console.log(input,output)
+            var start_date = start_date_data
+            var end_date = end_date_data
+            var graphData = result_dictionary
 
             var v = new Validator();
             var result = v.validate(
-                {data, planID, input, output, WIP, cycleTime, created_at}
+                {data, planID, input, output, WIP, cycleTime, start_date, end_date, graphData,created_at}
                 , srScheduleSchema);
 
             if (result.valid==false) {
                 throw new Error("Schedule Invalid data");
             }
 
-            const newData = new SR_Schedules({data, planID, input, output, WIP, cycleTime, created_at})
+            const newData = new SR_Schedules({data, planID, input, output, WIP, cycleTime, start_date, end_date, graphData ,created_at})
             await newData.save();
 
             res.send('PlanID: '+planID+' successfully added')
@@ -424,6 +714,7 @@ router.post('/insert', authenticateJWT, async (req, res) => {
 
         return res.status(400).json({ message: errorMessage });
     }
+    //!!! SAMPE SINI !!!
 });
 
 router.post('/data', authenticateJWT, async (req, res) => {
@@ -460,11 +751,70 @@ router.post('/data', authenticateJWT, async (req, res) => {
                 return ObjectA
             }
         })
-        return res.status(200).send({stat:'success',data:cleanData});
+        return res.status(200).send({stat:'success',data:cleanData, graphData:ArrDetailID.graphData, start_date:ArrDetailID.start_date, end_date:ArrDetailID.end_date, id_schedule:id});
     } catch (error) {
         return res.status(200).send({stat:'failed',data:null});
     }
 
+});
+
+router.post('/graphdata', authenticateJWT, async (req, res) => {
+    try {
+        const minute = req.body.minute
+        const id = req.body.id
+
+        let steps =  await SR_Steps.find()
+
+        //! get data from sr_schedul_details
+        let ArrDetailID =  await SR_Schedules.findById(id) //! array biasa bukan array of ObjectID
+        let listObjectID = ArrDetailID.data.map(objId => new ObjectId(objId))
+
+        let dataDetail =  await SR_Schedule_Details.find({_id:{$in:listObjectID}})
+
+        let cleanData = dataDetail.map(ObjectA =>{
+            let match = steps.find(ObjectB => ObjectB._id.toString()===ObjectA.StepID.toString())
+
+            if (match){
+                return {
+                    "_id":ObjectA._id,
+                    "FLOW":ObjectA.FLOW,
+                    "PARENT_LOT":ObjectA.PARENT_LOT,
+                    "DEVICE":ObjectA.DEVICE,
+                    "PRODUCTID":ObjectA.PRODUCTID,
+                    "StepID":match.StepID,
+                    "MachineID":ObjectA.MachineID,
+                    "StepIn_Date":ObjectA.StepIn_Date,
+                    "StepOut_Date":ObjectA.StepOut_Date,
+                    "Quantity":ObjectA.Quantity,
+                    "TT_CUST_SOD":ObjectA.TT_CUST_SOD,
+                    "PlanID":ObjectA.PlanID,
+                }
+            }else{
+                return ObjectA
+            }
+            
+        })
+
+        var data = groupingLOT(cleanData)
+        var grouData = groupingProcess(data)
+
+        
+        var graph_data = graph_Out(grouData,minute)
+        var graphIn_data = graph_In(grouData,minute)
+        var graphWIP_data = graph_WIP(grouData,minute)
+
+        let newKeyName = "data_in";
+        graph_data[newKeyName] = graphIn_data.count;
+
+        let newKeyName2 = "data_WIP";
+        graph_data[newKeyName2] = graphWIP_data.count;
+
+        var result_dictionary = calculateDifference(graph_data)
+        res.send(result_dictionary)
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('An error occurred while trying to delete documents');
+    }
 });
 
 router.post('/delete', authenticateJWT, async (req, res) => {
@@ -472,6 +822,25 @@ router.post('/delete', authenticateJWT, async (req, res) => {
         const result = await SR_Schedule_Details.deleteMany({});
         console.log(result.deletedCount + " documents deleted.");
         res.send('delete all')
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('An error occurred while trying to delete documents');
+    }
+});
+
+router.post('/deleteitem', authenticateJWT, async (req, res) => {
+    try {
+        const planID = req.body.planID
+
+        let data =  await SR_Schedules.findOne({"planID":planID})
+        let detail_data = data.data
+
+        for (let index = 0; index < detail_data.length; index++) {
+            await SR_Schedule_Details.deleteOne({_id: new ObjectId(detail_data[index])})
+            // console.log(detail_data[index])
+        }
+        await SR_Schedules.deleteOne({"planID":planID})
+        res.send(planID+" deleted")
     } catch (error) {
         console.error(error);
         res.status(500).send('An error occurred while trying to delete documents');

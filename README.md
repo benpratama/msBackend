@@ -37,5 +37,17 @@
 - pl_mergeData => tambahin 1 msec buat yang msec 999
 
 # update v5
-### 2024-04-15
+### 2024-04-15 10:20
 - update kasih izin yang MonitoringSystem
+
+# update v6
+### 2024-04-15 10:27
+- production line, set port data
+
+# update v7
+### 2024-04-15 10:28
+- production line, set port data
+
+# update v8
+### 2024-04-15 10:29
+- nyimpen data graph di db, data scheduling result
