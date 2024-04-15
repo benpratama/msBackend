@@ -41,7 +41,7 @@ function sput(fileStream) {
     let sputWaferId = sputData_Raw.map(row => row['FIELD_5']);
     let sputChamberEtch = Array(sputData_Raw.length).fill(null);
     let sputDeviceId = sputData_Raw.map(row => row['FIELD_7']);
-    let sputRi = Array(sputData_Raw.length).fill(null);
+    let sputRi = sputData_Raw.map(row => row['RI']);
 
     let sputMeasureType1 = Array(sputData_Raw.length).fill('Rs');
     let sputNn1 = sputData_Raw.map(row => row['NN']);
@@ -49,8 +49,9 @@ function sput(fileStream) {
     let sputNn2 = Array(sputData_Raw.length).fill(null);
     
     let sputGSI = sputData_Raw.map(row => row.GSI);
+    let sputPort = sputData_Raw.map(row => row.PORT_ID);
 
-    return [sputLotId, sputDate, sputMachineIdEtch, sputPieceId, sputWaferId, sputChamberEtch, sputDeviceId, sputRi, sputMeasureType1, sputNn1, sputMeasureType2, sputNn2,sputGSI];
+    return [sputLotId, sputDate, sputMachineIdEtch, sputPieceId, sputWaferId, sputChamberEtch, sputDeviceId, sputRi, sputMeasureType1, sputNn1, sputMeasureType2, sputNn2,sputGSI,sputPort];
 }
 
 function plate(fileStream){
@@ -75,8 +76,9 @@ function plate(fileStream){
     let plat_NN_2 = new Array(plat_Data_Raw.length).fill(null);
 
     let plat_GSI = plat_Data_Raw.map(row => row.GSI);
+    let platePort = plat_Data_Raw.map(row => row.PORT_ID);
 
-    return [plat_LOT_ID,plat_Date,plat_MACHINE_ID_ETCH,plat_PIECEID,plat_WAFER_ID,plat_CHAMBER_ETCH,plat_DEVICE_ID,plat_RI,plat_MeasureType_1,plat_NN_1,plat_MeasureType_2,plat_NN_2,plat_GSI];
+    return [plat_LOT_ID,plat_Date,plat_MACHINE_ID_ETCH,plat_PIECEID,plat_WAFER_ID,plat_CHAMBER_ETCH,plat_DEVICE_ID,plat_RI,plat_MeasureType_1,plat_NN_1,plat_MeasureType_2,plat_NN_2,plat_GSI,platePort];
 }
 
 function PR_Coat(fileStream){
@@ -102,8 +104,9 @@ function PR_Coat(fileStream){
     let coat_NN_2 = new Array(PR_Data_Raw.length).fill(null);
 
     let coat_GSI = new Array(PR_Data_Raw.length).fill(null);
+    let coat_PORT = PR_Data_Raw.map(row => row.PORT_ID);
 
-    return [coat_LOT_ID,coat_Date,coat_MACHINE_ID_ETCH,coat_PIECEID,coat_WAFER_ID,coat_CHAMBER_ETCH,coat_DEVICE_ID,coat_RI,coat_MeasureType_1,coat_NN_1,coat_MeasureType_2,coat_NN_2,coat_GSI];
+    return [coat_LOT_ID,coat_Date,coat_MACHINE_ID_ETCH,coat_PIECEID,coat_WAFER_ID,coat_CHAMBER_ETCH,coat_DEVICE_ID,coat_RI,coat_MeasureType_1,coat_NN_1,coat_MeasureType_2,coat_NN_2,coat_GSI,coat_PORT];
 }
 
 function PR_Step(fileStream){
@@ -129,6 +132,7 @@ function PR_Step(fileStream){
     let step_NN_2 = new Array(PR_Data_Raw.length).fill(null);
 
     let step_GSI = new Array(PR_Data_Raw.length).fill(null);
+    let step_PORT = PR_Data_Raw.map(row => row.PORT_ID);
 
     // let devp_LOT_ID = PR_Data_Raw.map(row => row.FIELD_1);
     // let devp_Date = PR_Data_Raw.map(row => row.FIELD_3);
@@ -146,7 +150,7 @@ function PR_Step(fileStream){
 
     // let devp_GSI = PR_Data_Raw.map(row => row.GSI);
 
-    return [step_LOT_ID,step_Date,step_MACHINE_ID_ETCH,step_PIECEID,step_WAFER_ID,step_CHAMBER_ETCH,step_DEVICE_ID,step_RI,step_MeasureType_1,step_NN_1,step_MeasureType_2,step_NN_2,step_GSI ];
+    return [step_LOT_ID,step_Date,step_MACHINE_ID_ETCH,step_PIECEID,step_WAFER_ID,step_CHAMBER_ETCH,step_DEVICE_ID,step_RI,step_MeasureType_1,step_NN_1,step_MeasureType_2,step_NN_2,step_GSI,step_PORT];
 }
 
 function PR_Devp(fileStream){
@@ -172,8 +176,9 @@ function PR_Devp(fileStream){
     let devp_NN_2 = new Array(PR_Data_Raw.length).fill(null);
 
     let devp_GSI = PR_Data_Raw.map(row => row.GSI);
+    let devp_PORT = PR_Data_Raw.map(row => row.PORT_ID);
 
-    return [devp_LOT_ID,devp_Date,devp_MACHINE_ID_ETCH,devp_PIECEID,devp_WAFER_ID,devp_CHAMBER_ETCH,devp_DEVICE_ID,devp_RI,devp_MeasureType_1,devp_NN_1,devp_MeasureType_2,devp_NN_2,devp_GSI];
+    return [devp_LOT_ID,devp_Date,devp_MACHINE_ID_ETCH,devp_PIECEID,devp_WAFER_ID,devp_CHAMBER_ETCH,devp_DEVICE_ID,devp_RI,devp_MeasureType_1,devp_NN_1,devp_MeasureType_2,devp_NN_2,devp_GSI,devp_PORT];
 }
 
 function ETCH(fileStream){
@@ -209,9 +214,11 @@ function ETCH(fileStream){
 
     let etch_GSI = merge_ETCH.map(row => row['GSI']);
 
+    let etch_Port = merge_ETCH.map(row => row.PORT_ID);
+
     return [
         etch_LOT_ID, etch_Date, etch_MACHINE_ID_ETCH, etch_PIECEID, etch_WAFER_ID, etch_CHAMBER_ETCH, etch_DEVICE_ID, etch_RI, 
-        etch_MeasureType_1, etch_NN_1, etch_MeasureType_2, etch_NN_2, etch_GSI
+        etch_MeasureType_1, etch_NN_1, etch_MeasureType_2, etch_NN_2, etch_GSI,etch_Port
     ];
 }
 
@@ -237,10 +244,11 @@ function final(fileStream) {
     let final_NN_2 = Array(final_Data_Raw.length).fill(null);
 
     let final_GSI = Array(final_Data_Raw.length).fill(null);
+    let final_Port = final_Data_Raw.map(row => row.PORT_ID);
 
     return [
         final_LOT_ID, final_Date, final_MACHINE_ID_ETCH, final_PIECEID, final_WAFER_ID, final_CHAMBER_ETCH, final_DEVICE_ID, final_RI, 
-        final_MeasureType_1, final_NN_1, final_MeasureType_2, final_NN_2, final_GSI
+        final_MeasureType_1, final_NN_1, final_MeasureType_2, final_NN_2, final_GSI,final_Port
     ];
 }
 
@@ -297,6 +305,10 @@ function mergeFile(r_sput, r_plate, r_PR_coat,r_PR_Step,r_PR_Devp, r_ETCH, r_fin
         let filtered_GSI  = arr_GSI.filter(item => item !== undefined);
         let final_GSI = _.flatten(filtered_GSI);
 
+    let arr_PORT = [r_sput[13], r_plate[13], r_PR_coat[13], r_PR_Step[13], r_PR_Devp[13], r_ETCH[13], r_final[13]].filter(array => array !== undefined);
+        let filtered_PORT  = arr_PORT.filter(item => item !== undefined);
+        let final_PORT = _.flatten(filtered_PORT);
+
 
     // create final data object
     let arrayOfObjects = final_Date.map((item, index) => {
@@ -313,7 +325,8 @@ function mergeFile(r_sput, r_plate, r_PR_coat,r_PR_Step,r_PR_Devp, r_ETCH, r_fin
             'MEASURE2': final_MeasureType_2[index],
             'MEASURE2_VAL': final_NN_2[index],
             'RI': final_RI[index],
-            'GSI':final_GSI[index]
+            'GSI':final_GSI[index],
+            'PORT':final_PORT[index]
         };
     });
 

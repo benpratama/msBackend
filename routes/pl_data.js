@@ -53,7 +53,8 @@ async function checkConvertData(rawData){
                 "MEASURE2":data['MEASURE2'],
                 "MEASURE2_VAL":data['MEASURE2_VAL'],
                 "RI":data['RI'],
-                "GSI":data['GSI']
+                "GSI":data['GSI'],
+                "PORT":data['PORT']
             })
         }
     }
@@ -82,13 +83,14 @@ router.post('/insert', authenticateJWT, async (req, res) => {
                 var MEASURE2_VAL = cleanObj.MEASURE2_VAL
                 var RI = cleanObj.RI
                 var GSI = cleanObj.GSI
-                
+                var PORT = cleanObj.PORT
+
                 var newData = new PL_Records(
                     {
                         Date, PieceID, LOT_ID, 
                         WAFER_ID ,MACHINE_ID, CHAMBER_ID, 
                         DEVICE, MEASURE1, MEASURE1_VAL,
-                        MEASURE2, MEASURE2_VAL, RI, GSI
+                        MEASURE2, MEASURE2_VAL, RI, GSI, PORT
                     }
                 )
                 newData.save();
@@ -148,7 +150,8 @@ router.post('/filter', authenticateJWT, async (req, res) => {
                 "MEASURE2": record.MEASURE2,
                 "MEASURE2_VAL": record.MEASURE2_VAL,
                 "RI": record.RI,
-                "GSI": record.GSI
+                "GSI": record.GSI,
+                "PORT": record.PORT
             }
         )
         cleanData.sort((a, b) => new Date(a.Date) - new Date(b.Date));

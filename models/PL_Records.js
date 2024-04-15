@@ -18,6 +18,7 @@ const SR_RecordSchema = new mongoose.Schema({
     RI:{ type: Number},
 
     GSI:{ type: Number},
+    PORT:{ type: Number},
 
 },{ versionKey: false });
 
