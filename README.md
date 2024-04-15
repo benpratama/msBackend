@@ -35,3 +35,7 @@
 # update v4.1
 ### 2023-08-28 13:00
 - pl_mergeData => tambahin 1 msec buat yang msec 999
+
+# update v5
+### 2024-04-15
+- update kasih izin yang MonitoringSystem

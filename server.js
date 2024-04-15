@@ -16,7 +16,7 @@ app.use(bodyParser.json({limit: '15mb'}));
 app.use(bodyParser.urlencoded({limit: '15mb', extended: true}));
 app.use(cors({
     //! cuma kasih izin yang MonitoringSystem app aja
-    origin: 'http://localhost:3000',
+    origin: ['http://localhost:3000', 'http://140.116.234.100:1868'],
     credentials: true
 }));
 const port = 8001;
