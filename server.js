@@ -12,8 +12,8 @@ const bodyParser = require('body-parser');
 require('dotenv').config()
 
 const app = express();
-app.use(bodyParser.json({limit: '15mb'}));
-app.use(bodyParser.urlencoded({limit: '15mb', extended: true}));
+app.use(bodyParser.json({limit: '50mb'}));
+app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 app.use(cors({
     //! cuma kasih izin yang MonitoringSystem app aja
     origin: ['http://localhost:3000', 'http://140.116.234.100:1868'],

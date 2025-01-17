@@ -9,12 +9,16 @@ const SR_Schedule_Details = new mongoose.Schema({
     StepID: { type: mongoose.ObjectId, required: true },
     MachineID: { type: String},
 
+
     StepIn_Date: { type: String, required: true },
     StepOut_Date: { type: String, required: true },
     Quantity: { type: Number, required: true },
 
     TT_CUST_SOD: { type: String, required: true },
     PlanID: { type: String, required: true },
+
+    Step_Before: { type: Number},
+    Step_After: { type: Number}
 },{ versionKey: false });
 
 module.exports = mongoose.model('sr_schedule_details', SR_Schedule_Details);

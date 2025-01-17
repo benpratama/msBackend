@@ -4,9 +4,11 @@ const moment2 = require('moment');
 const Validator = require('jsonschema').Validator;
 
 const SR_Schedules = require('../models/SR_Schedules')
+const SR_Graph = require('../models/SR_Graph')
 const SR_Schedule_Details = require('../models/SR_Schedule_Details')
 const SR_Steps = require('../models/SR_Step')
 const authenticateJWT = require('../authMiddleware')
+const srGraph = require('../JSON SCHEMA/SR/graph')
 const srDataDetailSchema = require('../JSON SCHEMA/SR/dataDetail')
 const srScheduleSchema = require('../JSON SCHEMA/SR/schedule')
 
@@ -32,6 +34,7 @@ const ObjectId = require('mongodb').ObjectId;
  */
 
 function groupingLOT(data){
+    console.log("groupingLOT")
     //! clean global var
     listParentLot=[];
 
@@ -62,9 +65,9 @@ function groupingLOT(data){
 }
 
 function calculateHold(dataGroup,timeHold=10){
+    console.log("calculateHold")
     let result=[]
     if (dataGroup.length>1) {
-
         /**Order StepIn_Date data asc */
         var parentLOT = dataGroup.sort((date1, date2) => new Date(date1['StepIn_Date']) - new Date(date2['StepIn_Date']))
         for (let index = 0; index < dataGroup.length && index+1!==dataGroup.length ; index++) {
@@ -102,6 +105,7 @@ function calculateHold(dataGroup,timeHold=10){
 }
 
 function groupingProcess(mergeData){
+    console.log("groupingProcess")
     var grouped = {};
     mergeData.forEach(function(obj) {
         if (!grouped[obj.PARENT_LOT]) {
@@ -188,6 +192,7 @@ function cal__Time(raw_data){
 
 //! Calculate Input, Output
 function cal__InOut(cleanData){
+    console.log("cal__InOut")
     var result={}
     var totInput =0
     var totOut =0
@@ -207,6 +212,7 @@ function cal__InOut(cleanData){
 
 //! Calculate Cycle Time
 function cal__CycleTime (mergeData){
+    console.log("cal__CycleTime")
     const result = {};
 
     for (const item of mergeData) {
@@ -235,6 +241,7 @@ function cal__CycleTime (mergeData){
 }
 
 function adjustMinutesAndFormatISO(dateString, minutes) {
+    console.log("adjustMinutesAndFormatISO")
     // Parse the ISO date string
     const date = new Date(dateString);
 
@@ -254,6 +261,7 @@ function adjustMinutesAndFormatISO(dateString, minutes) {
 
 // buat bikin timeseriess data
 function generateTimeSeries(start, end, intervalMinutes) {
+    console.log("generateTimeSeries")
     let startTime = new Date(start);
     const endTime = new Date(end);
     const timeSeries = {};
@@ -278,32 +286,27 @@ function generateTimeSeries(start, end, intervalMinutes) {
     return timeSeries;
 }
 
-function incrementCount(dictionary, dateTime) {
-    /// Split the dateTime into date and time
-    const [date, time] = dateTime.split(' ');
-    const [month, day, year] = date.split('/');
-
-    // Add zero padding to month and day if necessary
-    const formattedMonth = month.length === 1 ? '0' + month : month;
-    const formattedDay = day.length === 1 ? '0' + day : day;
-
-    // Add zero padding to time if necessary
-    const formattedTime = time.length === 4 ? '0' + time : time;
-
-    // Combine the formatted date and time
-    var formattedDateTime = `${formattedMonth}/${formattedDay}/${year} ${formattedTime}`;
-
-    // Check if the formattedDateTime exists in the dictionary
-    if (dictionary.hasOwnProperty(formattedDateTime)) {
-        dictionary[formattedDateTime].count += 1;
-    } else {
-        console.log(`DateTime ${formattedDateTime} not found in the dictionary.`);
+function incrementCount(dictionary, list_time) {
+    console.log("incrementCount")
+    for (let index = 0; index < list_time.length; index++) {
+        const date = new Date(list_time[index]);
+        Object.keys(dictionary).forEach((timeKey) => {
+            const startTime = new Date(timeKey);
+            const endTimeKey = Object.keys(dictionary).find(key => new Date(key) > startTime);
+            const endTime = endTimeKey ? new Date(endTimeKey) : new Date(startTime.getTime() + 6 * 60000); // Assumes 6 minute intervals as per your example
+            
+            // Check if the provided date falls within the current start and end time
+            if (date >= startTime && date < endTime) {
+            dictionary[timeKey].count += 1; // Increment the count
+            }
+        });
     }
     return dictionary;
+    
 }
 
 function transformDictionaryToArrays(dictionary) {
-
+console.log(transformDictionaryToArrays)
     const result = { time: [], count: [] };
 
     for (const [key, value] of Object.entries(dictionary)) {
@@ -321,6 +324,7 @@ function transformDictionaryToArrays(dictionary) {
 }
 
 function mergeDictionaries(baseDict, mergeDict) {
+    console.log("mergeDictionaries")
     // Iterate over the keys in the mergeDict
     for (const key in mergeDict) {
         if (mergeDict.hasOwnProperty(key)) {
@@ -337,10 +341,12 @@ function mergeDictionaries(baseDict, mergeDict) {
 }
 
 function graph_Out(cleanData,minute){
+    console.log("graph_Out")
     let earliestStepIn = new Date('12-31-9999');
     let latestStepOut = new Date('01-01-0000');
     let interval = minute
     var dic_result = {}
+    var list_time = []
 
     Object.values(cleanData).forEach(group => {
         group.forEach(entry => {
@@ -357,7 +363,6 @@ function graph_Out(cleanData,minute){
         });
     });
 
-
     const start_time = adjustMinutesAndFormatISO(earliestStepIn,0);
     const end_time = adjustMinutesAndFormatISO(latestStepOut,0);
 
@@ -369,25 +374,26 @@ function graph_Out(cleanData,minute){
         for (let index = 0; index < cleanData[element].length; index++) {
             if (cleanData[element][index]['StepID']=='6970') {
                 let time = cleanData[element][index]['StepOut_Date']
-                dic_result = incrementCount(time_dictionary,time)
+                list_time.push(time)
             }else{
                 dic_result= time_dictionary
             }
         }
     })
-
+    dic_result = incrementCount(time_dictionary,list_time)
     const mergedDict = mergeDictionaries(based_time_dictionary, dic_result);
     
     let final_result = transformDictionaryToArrays(mergedDict)
-
     return final_result
 }
 
 function graph_In(cleanData,minute){
+    console.log("graph_In")
     let earliestStepIn = new Date('12-31-9999');
     let latestStepOut = new Date('01-01-0000');
     let interval = minute
     var dic_result = {}
+    var list_time = []
 
     Object.values(cleanData).forEach(group => {
         group.forEach(entry => {
@@ -415,12 +421,12 @@ function graph_In(cleanData,minute){
         for (let index = 0; index < cleanData[element].length; index++) {
             if (cleanData[element][index]['StepID']=='6360') {
                 let time = cleanData[element][index]['StepIn_Date']
-                dic_result = incrementCount(time_dictionary,time)
+                list_time.push(time)
                 
             }
         }
     })
-
+    dic_result = incrementCount(time_dictionary,list_time)
     const mergedDict = mergeDictionaries(based_time_dictionary, dic_result);
 
     let final_result = transformDictionaryToArrays(mergedDict)
@@ -429,11 +435,13 @@ function graph_In(cleanData,minute){
 }
 
 function graph_WIP(cleanData,minute){
+    console.log("graph_WIP")
     let earliestStepIn = new Date('12-31-9999');
     let latestStepOut = new Date('01-01-0000');
     let interval = minute
     var dic_result = {}
 
+    //! ini ambil StepInDate sama StepOutDate
     Object.values(cleanData).forEach(group => {
         group.forEach(entry => {
           const stepInDate = new Date(entry.StepIn_Date);
@@ -460,18 +468,18 @@ function graph_WIP(cleanData,minute){
         if (cleanData.hasOwnProperty(key)) {
             // Iterate over each entry in the array for this key
             cleanData[key].forEach(entry => {
-                const stepIn = new Date(entry.StepIn_Date);
-                const stepOut = new Date(entry.StepOut_Date);
-
+                const stepIn = new Date(entry.StepID=="HOLD"?entry.Start_Hold:entry.StepIn_Date);
+                const stepOut = new Date(entry.StepID=="HOLD"?entry.End_Hold:entry.StepOut_Date);
                 // Iterate over each key in the dictionary
                 for (const dictKey in time_dictionary) {
                     if (time_dictionary.hasOwnProperty(dictKey)) {
                         const dictDate = new Date(dictKey);
 
-                        // Check if the dictionary date is within the range
                         if (dictDate >= stepIn && dictDate <= stepOut) {
+                            // console.log(stepIn+' '+entry.StepID)
                             time_dictionary[dictKey].count += 1;
                         }
+                        
                     }
                 }
             });
@@ -480,21 +488,21 @@ function graph_WIP(cleanData,minute){
     const mergedDict = mergeDictionaries(based_time_dictionary, time_dictionary);
 
     let final_result = transformDictionaryToArrays(mergedDict)
-    
     return final_result
 }
 
 function calculateDifference(dataObject) {
-    const { data_in, data_WIP } = dataObject;
+    console.log("calculateDifference")
+    const { count, data_WIP } = dataObject;
 
     // Check if both arrays have the same length
-    if (data_in.length !== data_WIP.length) {
+    if (count.length !== data_WIP.length) {
         console.error("Arrays have different lengths");
         return null;
     }
 
     // Calculate the difference
-    const difference = data_WIP.map((value, index) => value - data_in[index]);
+    const difference = data_WIP.map((value, index) => value - count[index]);
 
     delete dataObject.data_WIP
 
@@ -505,10 +513,51 @@ function calculateDifference(dataObject) {
 }
 
 function dateToInteger(dateString) {
+    console.log("dateToInteger")
     const date = new Date(dateString);
     return date.getTime();
 }
 
+function incrementData_INOUT(data){
+    console.log("incrementData_INOUT")
+    var temp = []
+    for (let index = 0; index < data.length; index++) {
+        if(index==0){
+            temp.push(data[index])
+        }else{
+            // var cal=
+            temp.push(((temp[index-1])+data[index]))
+        }
+    }
+    return temp
+}
+
+function inccrement_WIP(dataIn,dataOut){
+    console.log("inccrement_WIP")
+    var result = []
+    for (let index = 0; index < dataIn.length; index++) {
+        result.push(dataIn[index]-dataOut[index])
+    }
+    return result
+}
+
+function initialWIPCalculation(cleanData){
+    console.log("initialWIPCalculation")
+    var listID=[]
+    listParentLot.forEach(element => {
+        for (let index = 0; index < 1; index++) {
+            // if (new Date(cleanData[element][index]['StepIn_Date']).getTime()===earliestStepIn.getTime()) {
+            //     let lotID = cleanData[element][index]['PARENT_LOT']
+            //     listID.push(lotID)
+            // }
+            if(cleanData[element][index]['StepID']!==6360){
+                let lotID = cleanData[element][index]['PARENT_LOT']
+                listID.push(lotID)
+            }
+        }
+    })
+    return listID.length
+}
 
 
 //============ API =============
@@ -587,11 +636,11 @@ router.post('/insert', authenticateJWT, async (req, res) => {
     var grouData = groupingProcess(data) //! parameternya datamerge hasil groupingLOT
     var inOut_data = cal__InOut(grouData) //! tampilin jumlah data yang ditable depan
     
-    var graph_data = graph_Out(grouData,3) //! ini tanggalnya + sama data out (key "count")
-    var graphIn_data = graph_In(grouData,3) //! ini data IN ( 6360) 
-    var graphWIP_data = graph_WIP(grouData,3) //! ini data WIP
+    var graph_data = graph_Out(grouData,6) //! ini tanggalnya + sama data out (key "count")
+    var graphIn_data = graph_In(grouData,6) //! ini data IN ( 6360) 
+    var graphWIP_data = graph_WIP(grouData,6) //! ini data WIP
+    var initialWIP = initialWIPCalculation(grouData)
     
-
     //! masukin array in sama WIP kedalem graph_data
     let newKeyName = "data_in";
     graph_data[newKeyName] = graphIn_data.count;
@@ -599,8 +648,16 @@ router.post('/insert', authenticateJWT, async (req, res) => {
     let newKeyName2 = "data_WIP";
     graph_data[newKeyName2] = graphWIP_data.count;
 
-    var result_dictionary = calculateDifference(graph_data) //! dara graph
-    
+    var result_dictionary = calculateDifference(graph_data) //! data graph
+
+    let newKeyName_in = "increment_in";
+    result_dictionary[newKeyName_in] = incrementData_INOUT(result_dictionary.data_in)
+
+    let newKeyName_out = "increment_out";
+    result_dictionary[newKeyName_out] = incrementData_INOUT(result_dictionary.count)    
+
+    let newKeyName_wip = "increment_wip";
+    result_dictionary[newKeyName_wip] = inccrement_WIP(result_dictionary.increment_in,result_dictionary.increment_out)    
 
     var start_date_data = dateToInteger(result_dictionary.time[0])
     var end_date_data = dateToInteger(result_dictionary.time[result_dictionary.time.length-1])
@@ -614,7 +671,6 @@ router.post('/insert', authenticateJWT, async (req, res) => {
 
              //! masukin data ke sr_schedules_details
             for (const detail of data) {
-
                 let stepId = steps.find(obj => obj.StepID === detail.StepID.toString());
                 stepID_ =  detail.StepID.toString()
 
@@ -646,7 +702,9 @@ router.post('/insert', authenticateJWT, async (req, res) => {
                             StepOut_Date:detail.StepOut_Date,
                             Quantity:detail.Quantity,
                             TT_CUST_SOD:detail.TT_CUST_SOD,
-                            PlanID:detail.PlanID
+                            PlanID:detail.PlanID,
+                            Step_Before:detail.Step_Before,
+                            Step_After:detail.Step_After,
                         }
                         , srDataDetailSchema);
 
@@ -661,21 +719,25 @@ router.post('/insert', authenticateJWT, async (req, res) => {
                         PRODUCTID:detail.PRODUCTID,
                         StepID:stepId._id ||null,
                         MachineID:detail.MachineID,
-                        StepIn_Date:detail.StepIn_Date,
-                        StepOut_Date:detail.StepOut_Date,
+                        StepIn_Date:detail.StepID!='HOLD'?detail.StepIn_Date:detail.Start_Hold,
+                        StepOut_Date:detail.StepID!='HOLD'?detail.StepOut_Date:detail.End_Hold,
                         Quantity:detail.Quantity,
                         TT_CUST_SOD:detail.TT_CUST_SOD,
-                        PlanID:detail.PlanID
+                        PlanID:detail.PlanID,
+                        Step_Before:detail.StepID!='HOLD'?'':detail.Step_Before,
+                        Step_After:detail.StepID!='HOLD'?'':detail.Step_After,
                     })
                     let detailId = await detaildata.save();
                     listofDetailId.push(detailId._id)
 
                 }   
             }
+            
             var data = listofDetailId
-            var input = inOut_data.Input
+            // var input = inOut_data.Input
+            var input = initialWIP //! INITIAL WIP
             var output = inOut_data.Output
-            var WIP = input-output
+            var WIP = inOut_data.Input-inOut_data.Output
             var cycleTime = resultCycleTime
             var start_date = start_date_data
             var end_date = end_date_data
@@ -683,15 +745,33 @@ router.post('/insert', authenticateJWT, async (req, res) => {
 
             var v = new Validator();
             var result = v.validate(
-                {data, planID, input, output, WIP, cycleTime, start_date, end_date, graphData,created_at}
+                // {data, planID, input, output, WIP, cycleTime, start_date, end_date, graphData,created_at}
+                {data, planID, input, output, WIP, cycleTime, start_date, end_date, created_at}
                 , srScheduleSchema);
 
             if (result.valid==false) {
                 throw new Error("Schedule Invalid data");
             }
 
-            const newData = new SR_Schedules({data, planID, input, output, WIP, cycleTime, start_date, end_date, graphData ,created_at})
+            // const newData = new SR_Schedules({data, planID, input, output, WIP, cycleTime, start_date, end_date, graphData ,created_at})
+            const newData = new SR_Schedules({data, planID, input, output, WIP, cycleTime, start_date, end_date, created_at})
             await newData.save();
+
+            //! dari sini --> graph
+            var idSchedule = newData._id.toString()
+
+            var v = new Validator();
+            var result = v.validate(
+                // {data, planID, input, output, WIP, cycleTime, start_date, end_date, graphData,created_at}
+                {idSchedule,graphData, created_at}
+                , srGraph);
+
+            if (result.valid==false) {
+                throw new Error("Schedule Invalid data");
+            }
+
+            const newDataGraph = new SR_Graph({idSchedule, graphData, created_at})
+            await newDataGraph.save();
 
             res.send('PlanID: '+planID+' successfully added')
         }else{
@@ -746,6 +826,8 @@ router.post('/data', authenticateJWT, async (req, res) => {
                     "Quantity":ObjectA.Quantity,
                     "TT_CUST_SOD":ObjectA.TT_CUST_SOD,
                     "PlanID":ObjectA.PlanID,
+                    "Step_Before":ObjectA.Step_Before,
+                    "Step_After":ObjectA.Step_After
                 }
             }else{
                 return ObjectA
@@ -759,61 +841,111 @@ router.post('/data', authenticateJWT, async (req, res) => {
 });
 
 router.post('/graphdata', authenticateJWT, async (req, res) => {
-    try {
-        const minute = req.body.minute
-        const id = req.body.id
+    //! ini yang pake hitungan
+    // jadi ini bisa update berdasarkan interval di frontend
+    // try {
+    //     const minute = req.body.minute
+    //     const id = req.body.id
 
-        let steps =  await SR_Steps.find()
+    //     let steps =  await SR_Steps.find()
 
-        //! get data from sr_schedul_details
-        let ArrDetailID =  await SR_Schedules.findById(id) //! array biasa bukan array of ObjectID
-        let listObjectID = ArrDetailID.data.map(objId => new ObjectId(objId))
+    //     //! get data from sr_schedul_details
+    //     let ArrDetailID =  await SR_Schedules.findById(id) //! array biasa bukan array of ObjectID
+    //     let listObjectID = ArrDetailID.data.map(objId => new ObjectId(objId))
 
-        let dataDetail =  await SR_Schedule_Details.find({_id:{$in:listObjectID}})
+    //     let dataDetail =  await SR_Schedule_Details.find({_id:{$in:listObjectID}})
 
-        let cleanData = dataDetail.map(ObjectA =>{
-            let match = steps.find(ObjectB => ObjectB._id.toString()===ObjectA.StepID.toString())
+    //     let cleanData = dataDetail.map(ObjectA =>{
+    //         let match = steps.find(ObjectB => ObjectB._id.toString()===ObjectA.StepID.toString())
 
-            if (match){
-                return {
-                    "_id":ObjectA._id,
-                    "FLOW":ObjectA.FLOW,
-                    "PARENT_LOT":ObjectA.PARENT_LOT,
-                    "DEVICE":ObjectA.DEVICE,
-                    "PRODUCTID":ObjectA.PRODUCTID,
-                    "StepID":match.StepID,
-                    "MachineID":ObjectA.MachineID,
-                    "StepIn_Date":ObjectA.StepIn_Date,
-                    "StepOut_Date":ObjectA.StepOut_Date,
-                    "Quantity":ObjectA.Quantity,
-                    "TT_CUST_SOD":ObjectA.TT_CUST_SOD,
-                    "PlanID":ObjectA.PlanID,
-                }
-            }else{
-                return ObjectA
-            }
+    //         if (match){
+    //             return {
+    //                 "_id":ObjectA._id,
+    //                 "FLOW":ObjectA.FLOW,
+    //                 "PARENT_LOT":ObjectA.PARENT_LOT,
+    //                 "DEVICE":ObjectA.DEVICE,
+    //                 "PRODUCTID":ObjectA.PRODUCTID,
+    //                 "StepID":match.StepID,
+    //                 "MachineID":ObjectA.MachineID,
+    //                 "StepIn_Date":ObjectA.StepIn_Date,
+    //                 "StepOut_Date":ObjectA.StepOut_Date,
+    //                 "Quantity":ObjectA.Quantity,
+    //                 "TT_CUST_SOD":ObjectA.TT_CUST_SOD,
+    //                 "PlanID":ObjectA.PlanID,
+    //             }
+    //         }else{
+    //             return ObjectA
+    //         }
             
-        })
+    //     })
 
-        var data = groupingLOT(cleanData)
-        var grouData = groupingProcess(data)
+    //     var data = groupingLOT(cleanData)
+    //     var grouData = groupingProcess(data)
 
         
-        var graph_data = graph_Out(grouData,minute)
-        var graphIn_data = graph_In(grouData,minute)
-        var graphWIP_data = graph_WIP(grouData,minute)
+    //     var graph_data = graph_Out(grouData,minute)
+    //     var graphIn_data = graph_In(grouData,minute)
+    //     var graphWIP_data = graph_WIP(grouData,minute)
 
-        let newKeyName = "data_in";
-        graph_data[newKeyName] = graphIn_data.count;
+    //     let newKeyName = "data_in";
+    //     graph_data[newKeyName] = graphIn_data.count;
 
-        let newKeyName2 = "data_WIP";
-        graph_data[newKeyName2] = graphWIP_data.count;
+    //     let newKeyName2 = "data_WIP";
+    //     graph_data[newKeyName2] = graphWIP_data.count;
 
-        var result_dictionary = calculateDifference(graph_data)
-        res.send(result_dictionary)
+    //     var result_dictionary = calculateDifference(graph_data)
+    //     res.send(result_dictionary)
+    // } catch (error) {
+    //     console.error(error);
+    //     res.status(500).send('An error occurred while trying to delete documents');
+    // }
+
+    const {id} = req.body;
+    const date = req.body.date;
+    const last_index=1000
+    
+    try {
+        let rawData =  await SR_Graph.find({idSchedule:{$in:id}})
+        // var dataLength = rawData[0].graphData.time.length
+        // var index = rawData[0].graphData.time.indexOf(date.trim())
+        // var time = rawData[0].graphData.time.slice(index,(dataLength+index))
+        // var count = rawData[0].graphData.count.slice(index,(dataLength+index))
+        // var data_in = rawData[0].graphData.data_in.slice(index,(dataLength+index))
+        // var data_WIP = rawData[0].graphData.data_WIP.slice(index,(dataLength+index))
+        // var data_increment_In = rawData[0].graphData.increment_in.slice(index,(dataLength+index))
+        // var data_increment_Out = rawData[0].graphData.increment_out.slice(index,(dataLength+index))
+        // var lastDate = rawData[0].graphData.time[(dataLength+index)]
+
+        var dataLength = rawData[0].graphData.time.length
+        // var index = rawData[0].graphData.time.indexOf(date.trim())
+        var time = rawData[0].graphData.time
+        var count = rawData[0].graphData.count
+        var data_in = rawData[0].graphData.data_in
+        var data_WIP = rawData[0].graphData.data_WIP
+
+        var data_increment_In = rawData[0].graphData.increment_in
+        var data_increment_Out = rawData[0].graphData.increment_out
+        var data_increment_WIP_Total = rawData[0].graphData.increment_wip
+
+        var lastDate = rawData[0].graphData.time[(dataLength)]
+
+        if(lastDate===undefined){
+            var lastDate = rawData[0].graphData.time[dataLength-1]
+        }
+
+        var graphData={
+            "time":time,
+            "count":count,
+            "data_in":data_in,
+            "data_WIP":data_WIP,
+            "increment_in":data_increment_In,
+            "increment_out":data_increment_Out,
+            "increment_WIP_total":data_increment_WIP_Total
+        }
+
+        return res.status(200).send({stat:'success',graphData:graphData,dataLength:dataLength,lastDate:lastDate});
     } catch (error) {
-        console.error(error);
-        res.status(500).send('An error occurred while trying to delete documents');
+        return res.status(200).send(error.message);
     }
 });
 
@@ -833,6 +965,7 @@ router.post('/deleteitem', authenticateJWT, async (req, res) => {
         const planID = req.body.planID
 
         let data =  await SR_Schedules.findOne({"planID":planID})
+        let schedule_id =data._id
         let detail_data = data.data
 
         for (let index = 0; index < detail_data.length; index++) {
@@ -840,6 +973,7 @@ router.post('/deleteitem', authenticateJWT, async (req, res) => {
             // console.log(detail_data[index])
         }
         await SR_Schedules.deleteOne({"planID":planID})
+        await SR_Graph.deleteOne({"idSchedule":schedule_id})
         res.send(planID+" deleted")
     } catch (error) {
         console.error(error);

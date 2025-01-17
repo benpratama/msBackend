@@ -9,7 +9,7 @@ const SR_Schedules = new mongoose.Schema({
     cycleTime:{type: Object, require: true},
     start_date:{ type: Number, required: true},
     end_date:{ type: Number, required: true},
-    graphData:{type: Object, require: true},
+    // graphData:{type: Object, require: true},
     created_at:{type: String, required: true},
 },{ versionKey: false });
 

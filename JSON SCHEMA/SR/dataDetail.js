@@ -16,10 +16,14 @@ var srDataDetailSchema = {
 
         "TT_CUST_SOD":{"type": "string"},
         "PlanID":{"type": "string"},
+
+        "Step_Before":{"type": "number"},
+        "Step_After":{"type": "number"},
+
     },
     "required": ["FLOW","PARENT_LOT","DEVICE","PRODUCTID","StepID","MachineID",
                 "StepIn_Date","StepOut_Date","Quantity","TT_CUST_SOD", "PlanID"
-                ]
+            ]
 }
 
 module.exports = srDataDetailSchema;
